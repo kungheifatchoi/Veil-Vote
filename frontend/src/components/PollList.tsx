@@ -100,7 +100,7 @@ export function PollList() {
     // My Votes filter
     if (filter === 'my-votes') {
       const voteResult = userVoteStatuses?.[index];
-      return voteResult?.status === 'success' && voteResult.result === true;
+      return voteResult?.status === 'success' && Boolean(voteResult.result) === true;
     }
     
     const statusResult = pollStatuses?.[index];
@@ -116,7 +116,7 @@ export function PollList() {
   // Count user's votes
   const myVotesCount = (pollIds || []).filter((_, index) => {
     const voteResult = userVoteStatuses?.[index];
-    return voteResult?.status === 'success' && voteResult.result === true;
+    return voteResult?.status === 'success' && Boolean(voteResult.result) === true;
   }).length;
 
   const reversedPollIds = [...filteredPollIds].reverse();
