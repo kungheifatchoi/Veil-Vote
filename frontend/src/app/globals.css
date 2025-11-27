@@ -1,0 +1,129 @@
+@import "tailwindcss";
+
+/* Font import - Cinzel for that classic "engraved" look, Inter for readability */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
+
+:root {
+  /* Athenian Democracy Palette - Readability Optimized */
+  
+  /* Backgrounds - Softer, Warmer */
+  --alabaster: #F5F2EB; /* Warm rice white / light parchment */
+  --marble: #E8E4DA;    /* Slightly darker stone for card borders/bg */
+  
+  /* Primary Colors */
+  --aegean: #003B5E;    /* Deep Aegean Blue - Darker for better contrast */
+  --olive: #4B6324;     /* Deep Olive */
+  --clay: #A84028;      /* Deep Terracotta */
+  
+  /* Accents */
+  --gold: #B08D55;      /* Muted Gold */
+  --slate: #000000;     /* Pure Black */
+  --mist: #000000;      /* Pure Black */
+}
+
+@theme inline {
+  --color-alabaster: var(--alabaster);
+  --color-marble: var(--marble);
+  --color-aegean: var(--aegean);
+  --color-olive: var(--olive);
+  --color-clay: var(--clay);
+  --color-gold: var(--gold);
+  --color-slate: var(--slate);
+  --color-mist: var(--mist);
+  
+  --font-cinzel: 'Cinzel', serif;
+  --font-inter: 'Inter', sans-serif;
+}
+
+@layer base {
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--alabaster);
+    color: var(--slate);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Removed grid texture for cleaner look */
+    font-size: 18px; /* Increased base font size */
+    font-weight: 500; /* Increased base weight */
+    line-height: 1.6;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.02em;
+    color: #0F172A; /* Almost black for headings */
+  }
+  
+  ::selection {
+    background: rgba(0, 78, 124, 0.15); /* Aegean selection */
+    color: var(--aegean);
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: var(--marble);
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #d1c7b7;
+    border-radius: 3px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--gold);
+  }
+}
+
+  @layer components {
+  /* Stone Card Effect */
+  .stone-card {
+    background: #FAF8F3; /* Warm cream/ivory */
+    border: 1px solid #E8E2D6;
+    box-shadow: 
+      0 4px 6px -1px rgba(176, 141, 85, 0.06),
+      0 2px 4px -1px rgba(176, 141, 85, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6); /* Highlight top */
+  }
+  
+  .stone-card:hover {
+    background: #FFFCF7; /* Warmer on hover */
+    box-shadow: 
+      0 10px 15px -3px rgba(176, 141, 85, 0.1),
+      0 4px 6px -2px rgba(176, 141, 85, 0.05);
+    border-color: var(--gold);
+  }
+  
+  /* Classic Button */
+  .btn-primary {
+    background: var(--aegean);
+    color: white;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 78, 124, 0.2);
+  }
+  
+  .btn-primary:hover {
+    background: #003b5e;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 78, 124, 0.3);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--aegean);
+    color: var(--aegean);
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+  }
+  
+  .btn-secondary:hover {
+    background: rgba(0, 78, 124, 0.05);
+  }
+}
