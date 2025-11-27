@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useWalletClient } from 'wagmi';
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useWalletClient, usePublicClient } from 'wagmi';
 import { VEIL_VOTE_ADDRESS, VEIL_VOTE_ABI } from '@/lib/contracts';
 import { initializeFhevm, requestBatchUserDecryption, encryptValue } from '@/lib/fhevm';
+import { parseAbiItem } from 'viem';
 
 // Helper to shorten hash for display
 const shortenHash = (hash: string) => `${hash.slice(0, 6)}...${hash.slice(-4)}`;
@@ -70,6 +71,7 @@ interface PollInfo {
 export function PollCard({ pollId, onVoteSuccess }: PollCardProps) {
   const { address, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
+  const publicClient = usePublicClient();
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [isVoting, setIsVoting] = useState(false);
   const [isDecrypting, setIsDecrypting] = useState(false);
@@ -79,15 +81,38 @@ export function PollCard({ pollId, onVoteSuccess }: PollCardProps) {
   const [voteTxHash, setVoteTxHash] = useState<string | null>(null);
   const [decryptTxHash, setDecryptTxHash] = useState<string | null>(null);
 
-  // Load vote hash from localStorage on mount
+  // Fetch vote tx hash from blockchain events
   useEffect(() => {
-    if (address && pollId) {
-      const savedHash = getVoteHashFromHistory(address, pollId);
-      if (savedHash) {
-        setVoteTxHash(savedHash);
+    const fetchVoteTxHash = async () => {
+      if (!address || !publicClient || !pollId) return;
+      
+      try {
+        const logs = await publicClient.getLogs({
+          address: VEIL_VOTE_ADDRESS,
+          event: parseAbiItem('event VoteCast(uint256 indexed pollId, address indexed voter, uint256 timestamp)'),
+          args: {
+            pollId: BigInt(pollId),
+            voter: address,
+          },
+          fromBlock: 'earliest',
+          toBlock: 'latest',
+        });
+        
+        if (logs.length > 0) {
+          setVoteTxHash(logs[0].transactionHash);
+        }
+      } catch (error) {
+        console.error('Failed to fetch vote tx hash:', error);
+        // Fallback to localStorage
+        const savedHash = getVoteHashFromHistory(address, pollId);
+        if (savedHash) {
+          setVoteTxHash(savedHash);
+        }
       }
-    }
-  }, [address, pollId]);
+    };
+
+    fetchVoteTxHash();
+  }, [address, publicClient, pollId]);
 
   // Fetch poll info
   const { data: pollInfo, refetch: refetchPollInfo } = useReadContract({
@@ -339,16 +364,16 @@ export function PollCard({ pollId, onVoteSuccess }: PollCardProps) {
         </div>
       )}
 
-      {/* Vote Status / Results */}
-      {hasVoted && !hasEnded && (
-        <div className="mb-6 p-4 bg-olive/5 border-2 border-olive/30">
-          <div className="text-olive text-base font-cinzel font-black uppercase tracking-wide flex items-center gap-3 mb-2">
+      {/* Vote Status - Show for both active and ended polls if user voted */}
+      {hasVoted && (
+        <div className={`mb-6 p-4 ${hasEnded ? 'bg-stone-100 border-2 border-stone-300' : 'bg-olive/5 border-2 border-olive/30'}`}>
+          <div className={`text-base font-cinzel font-black uppercase tracking-wide flex items-center gap-3 ${hasEnded ? 'text-black/70 mb-1' : 'text-olive mb-2'}`}>
             <span className="text-xl">✓</span>
-            Vote Submitted (Encrypted)
+            {hasEnded ? 'You Voted' : 'Vote Submitted (Encrypted)'}
           </div>
           {voteTxHash && (
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-black/60 font-inter">Tx:</span>
+              <span className="text-black/60 font-inter">Vote Tx:</span>
               <EtherscanTxLink hash={voteTxHash} />
             </div>
           )}
