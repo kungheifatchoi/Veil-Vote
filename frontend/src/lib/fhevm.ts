@@ -341,7 +341,7 @@ export async function requestPublicDecryption(handle: string): Promise<Decryptio
 
   try {
     const results = await instance.publicDecrypt([handle]);
-    const value = results[handle];
+    const value = (results as Record<string, bigint>)[handle];
     
     if (typeof value === "bigint") {
       return { success: true, value };
