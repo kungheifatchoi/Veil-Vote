@@ -36,6 +36,20 @@ const saveVoteToHistory = (address: string, pollId: number, txHash: string) => {
   }
 };
 
+// Helper to get vote hash from localStorage
+const getVoteHashFromHistory = (address: string, pollId: number): string | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const key = `veil-vote-history-${address.toLowerCase()}`;
+    const existing = localStorage.getItem(key);
+    if (!existing) return null;
+    const history = JSON.parse(existing);
+    return history[pollId.toString()] || null;
+  } catch {
+    return null;
+  }
+};
+
 interface PollCardProps {
   pollId: number;
   onVoteSuccess?: () => void;
@@ -64,6 +78,16 @@ export function PollCard({ pollId, onVoteSuccess }: PollCardProps) {
   const [showVoteButtons, setShowVoteButtons] = useState(false);
   const [voteTxHash, setVoteTxHash] = useState<string | null>(null);
   const [decryptTxHash, setDecryptTxHash] = useState<string | null>(null);
+
+  // Load vote hash from localStorage on mount
+  useEffect(() => {
+    if (address && pollId) {
+      const savedHash = getVoteHashFromHistory(address, pollId);
+      if (savedHash) {
+        setVoteTxHash(savedHash);
+      }
+    }
+  }, [address, pollId]);
 
   // Fetch poll info
   const { data: pollInfo, refetch: refetchPollInfo } = useReadContract({
