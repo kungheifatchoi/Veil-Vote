@@ -289,7 +289,7 @@ export async function requestBatchUserDecryption(
       // Validate all results
       const values: Record<string, bigint> = {};
       for (const handle of handles) {
-        const value = results[handle];
+        const value = (results as Record<string, bigint>)[handle];
         if (typeof value === "bigint") {
           values[handle] = value;
         } else {
