@@ -118,7 +118,7 @@ export function StatusBar() {
 
       {/* GitHub Link */}
       <a
-        href="https://github.com/YOUR_GITHUB_REPO"
+        href="https://github.com/kungheifatchoi/Veil-Vote"
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center gap-2 text-black hover:text-aegean transition-colors group"

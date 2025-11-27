@@ -38,7 +38,7 @@ Veil Vote is an encrypted voting application built on **Zama fhEVM**. Using Full
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/veil-vote.git
+git clone https://github.com/kungheifatchoi/Veil-Vote.git
 cd veil-vote
 
 # Install contract dependencies
