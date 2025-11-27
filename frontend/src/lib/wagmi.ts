@@ -1,7 +1,7 @@
 import { http, createConfig } from 'wagmi';
 import { sepolia } from 'wagmi/chains';
-import { injected } from 'wagmi/connectors/injected';
-import { walletConnect } from 'wagmi/connectors/walletConnect';
+import { injected } from '@wagmi/connectors/injected';
+import { walletConnect } from '@wagmi/connectors/walletConnect';
 
 // WalletConnect Project ID
 const projectId = 'b56e18d47c72ab683b10814fe9495694';
