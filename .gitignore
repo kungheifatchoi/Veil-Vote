@@ -49,7 +49,3 @@ coverage.json
 frontend/.next/
 frontend/out/
 frontend/node_modules/
-
-# PRD documents (Chinese versions)
-PRD_Veil_Vote_CN.md
-README_CN.md
