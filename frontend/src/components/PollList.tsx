@@ -70,7 +70,7 @@ export function PollList() {
 
   const endedPollsCount = (pollIds || []).filter((_, index) => {
     const statusResult = pollStatuses?.[index];
-    return statusResult?.status === 'success' && statusResult.result === 1;
+    return statusResult?.status === 'success' && Number(statusResult.result) === 1;
   }).length;
 
   return (
