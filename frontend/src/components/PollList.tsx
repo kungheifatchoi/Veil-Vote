@@ -1,30 +1,29 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAccount, useReadContract, useReadContracts } from 'wagmi';
+import { useAccount, useReadContract, useReadContracts, usePublicClient } from 'wagmi';
 import { VEIL_VOTE_ADDRESS, VEIL_VOTE_ABI } from '@/lib/contracts';
 import { PollCard } from './PollCard';
 import { CreatePollModal } from './CreatePollModal';
+import { parseAbiItem } from 'viem';
 
-// Helper to get vote history from localStorage
-const getVoteHistory = (address: string): Record<string, string> => {
-  if (typeof window === 'undefined') return {};
-  try {
-    const history = localStorage.getItem(`veil-vote-history-${address.toLowerCase()}`);
-    return history ? JSON.parse(history) : {};
-  } catch {
-    return {};
-  }
-};
+// Vote event log type
+interface VoteLog {
+  pollId: bigint;
+  txHash: string;
+  timestamp: bigint;
+}
 
 // Helper to shorten hash
 const shortenHash = (hash: string) => `${hash.slice(0, 6)}...${hash.slice(-4)}`;
 
 export function PollList() {
   const { isConnected, address } = useAccount();
+  const publicClient = usePublicClient();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [filter, setFilter] = useState<'all' | 'active' | 'ended' | 'my-votes'>('all');
-  const [voteHistory, setVoteHistory] = useState<Record<string, string>>({});
+  const [voteLogs, setVoteLogs] = useState<VoteLog[]>([]);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
 
   // Fetch all poll IDs
   const { data: pollIds, refetch: refetchPolls } = useReadContract({
@@ -57,12 +56,42 @@ export function PollList() {
     }
   });
 
-  // Load vote history from localStorage
-  useEffect(() => {
-    if (address) {
-      setVoteHistory(getVoteHistory(address));
+  // Fetch vote events from blockchain
+  const fetchVoteLogs = async () => {
+    if (!address || !publicClient) return;
+    
+    setIsLoadingLogs(true);
+    try {
+      const logs = await publicClient.getLogs({
+        address: VEIL_VOTE_ADDRESS,
+        event: parseAbiItem('event VoteCast(uint256 indexed pollId, address indexed voter, uint256 timestamp)'),
+        args: {
+          voter: address,
+        },
+        fromBlock: 'earliest',
+        toBlock: 'latest',
+      });
+      
+      const parsedLogs: VoteLog[] = logs.map((log) => ({
+        pollId: log.args.pollId!,
+        txHash: log.transactionHash,
+        timestamp: log.args.timestamp!,
+      }));
+      
+      setVoteLogs(parsedLogs);
+    } catch (error) {
+      console.error('Failed to fetch vote logs:', error);
+    } finally {
+      setIsLoadingLogs(false);
     }
-  }, [address]);
+  };
+
+  // Load vote logs on mount and when address changes
+  useEffect(() => {
+    if (address && publicClient) {
+      fetchVoteLogs();
+    }
+  }, [address, publicClient]);
 
   // Fetch user's vote status for all polls
   const { data: userVoteStatuses } = useReadContracts({
@@ -82,15 +111,13 @@ export function PollList() {
     refetchPolls();
   };
 
-  // Refresh vote history when a vote is cast
+  // Refresh vote logs when a vote is cast
   const handleVoteSuccess = () => {
     refetchPolls();
-    if (address) {
-      // Small delay to ensure localStorage is updated
-      setTimeout(() => {
-        setVoteHistory(getVoteHistory(address));
-      }, 500);
-    }
+    // Small delay to ensure blockchain has indexed the event
+    setTimeout(() => {
+      fetchVoteLogs();
+    }, 2000);
   };
 
   // Filter polls based on status
@@ -207,26 +234,33 @@ export function PollList() {
       {reversedPollIds.length > 0 ? (
         <>
           {/* My Votes History Header */}
-          {filter === 'my-votes' && Object.keys(voteHistory).length > 0 && (
+          {filter === 'my-votes' && (
             <div className="bg-gold/5 border border-gold/30 rounded-sm p-4 mb-6">
               <h3 className="text-base font-cinzel font-bold text-black mb-3 flex items-center gap-2">
                 <span>📋</span> Vote Transaction History
+                {isLoadingLogs && <span className="text-sm font-inter font-normal text-black/50">(Loading...)</span>}
               </h3>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {Object.entries(voteHistory).map(([pollId, txHash]) => (
-                  <div key={pollId} className="flex items-center justify-between text-sm bg-white p-2 rounded border border-stone-100">
-                    <span className="text-black font-inter">Poll #{pollId}</span>
-                    <a
-                      href={`https://sepolia.etherscan.io/tx/${txHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-aegean hover:underline font-mono flex items-center gap-1"
-                    >
-                      🔗 {shortenHash(txHash)}
-                    </a>
-                  </div>
-                ))}
-              </div>
+              {voteLogs.length > 0 ? (
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {voteLogs.map((log) => (
+                    <div key={log.txHash} className="flex items-center justify-between text-sm bg-white p-2 rounded border border-stone-100">
+                      <span className="text-black font-inter">Poll #{log.pollId.toString()}</span>
+                      <a
+                        href={`https://sepolia.etherscan.io/tx/${log.txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-aegean hover:underline font-mono flex items-center gap-1"
+                      >
+                        🔗 {shortenHash(log.txHash)}
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-black/50 text-sm font-inter">
+                  {isLoadingLogs ? 'Loading vote history from blockchain...' : 'No vote transactions found on-chain.'}
+                </p>
+              )}
             </div>
           )}
           <div className="grid gap-8 md:grid-cols-2">
