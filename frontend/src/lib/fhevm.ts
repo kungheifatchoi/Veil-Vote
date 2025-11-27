@@ -341,7 +341,9 @@ export async function requestPublicDecryption(handle: string): Promise<Decryptio
 
   try {
     const results = await instance.publicDecrypt([handle]);
-    const value = (results as Record<string, bigint>)[handle];
+    // Access clearValues property which contains the decrypted values
+    const clearValues = results.clearValues as Record<string, bigint>;
+    const value = clearValues[handle];
     
     if (typeof value === "bigint") {
       return { success: true, value };
