@@ -6,10 +6,25 @@ import { VEIL_VOTE_ADDRESS, VEIL_VOTE_ABI } from '@/lib/contracts';
 import { PollCard } from './PollCard';
 import { CreatePollModal } from './CreatePollModal';
 
+// Helper to get vote history from localStorage
+const getVoteHistory = (address: string): Record<string, string> => {
+  if (typeof window === 'undefined') return {};
+  try {
+    const history = localStorage.getItem(`veil-vote-history-${address.toLowerCase()}`);
+    return history ? JSON.parse(history) : {};
+  } catch {
+    return {};
+  }
+};
+
+// Helper to shorten hash
+const shortenHash = (hash: string) => `${hash.slice(0, 6)}...${hash.slice(-4)}`;
+
 export function PollList() {
-  const { isConnected } = useAccount();
+  const { isConnected, address } = useAccount();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'active' | 'ended'>('all');
+  const [filter, setFilter] = useState<'all' | 'active' | 'ended' | 'my-votes'>('all');
+  const [voteHistory, setVoteHistory] = useState<Record<string, string>>({});
 
   // Fetch all poll IDs
   const { data: pollIds, refetch: refetchPolls } = useReadContract({
@@ -42,13 +57,51 @@ export function PollList() {
     }
   });
 
+  // Load vote history from localStorage
+  useEffect(() => {
+    if (address) {
+      setVoteHistory(getVoteHistory(address));
+    }
+  }, [address]);
+
+  // Fetch user's vote status for all polls
+  const { data: userVoteStatuses } = useReadContracts({
+    contracts: (pollIds || []).map((pollId) => ({
+      address: VEIL_VOTE_ADDRESS,
+      abi: VEIL_VOTE_ABI,
+      functionName: 'hasUserVoted',
+      args: [pollId, address],
+    })),
+    query: {
+      enabled: !!pollIds && pollIds.length > 0 && !!address,
+      refetchInterval: 10000,
+    }
+  });
+
   const handleCreateSuccess = () => {
     refetchPolls();
+  };
+
+  // Refresh vote history when a vote is cast
+  const handleVoteSuccess = () => {
+    refetchPolls();
+    if (address) {
+      // Small delay to ensure localStorage is updated
+      setTimeout(() => {
+        setVoteHistory(getVoteHistory(address));
+      }, 500);
+    }
   };
 
   // Filter polls based on status
   const filteredPollIds = (pollIds || []).filter((pollId, index) => {
     if (filter === 'all') return true;
+    
+    // My Votes filter
+    if (filter === 'my-votes') {
+      const voteResult = userVoteStatuses?.[index];
+      return voteResult?.status === 'success' && voteResult.result === true;
+    }
     
     const statusResult = pollStatuses?.[index];
     if (!statusResult || statusResult.status !== 'success') return true; // Show if status unknown
@@ -59,6 +112,12 @@ export function PollList() {
     if (filter === 'ended') return status === 1;
     return true;
   });
+
+  // Count user's votes
+  const myVotesCount = (pollIds || []).filter((_, index) => {
+    const voteResult = userVoteStatuses?.[index];
+    return voteResult?.status === 'success' && voteResult.result === true;
+  }).length;
 
   const reversedPollIds = [...filteredPollIds].reverse();
 
@@ -95,7 +154,7 @@ export function PollList() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-3 border-b border-stone-200 pb-1">
+      <div className="flex gap-3 border-b border-stone-200 pb-1 flex-wrap">
         <button
           onClick={() => setFilter('all')}
           className={`px-4 py-2 text-base font-cinzel font-bold tracking-wide transition-all border-b-2 ${
@@ -128,19 +187,58 @@ export function PollList() {
         >
           Ended ({endedPollsCount})
         </button>
+        {isConnected && (
+          <button
+            onClick={() => setFilter('my-votes')}
+            className={`px-4 py-2 text-base font-cinzel font-bold tracking-wide transition-all border-b-2 ${
+              filter === 'my-votes'
+                ? 'border-gold text-gold'
+                : 'border-transparent text-black hover:text-gold hover:border-stone-300'
+            }`}
+          >
+            <span className="flex items-center gap-1.5">
+              🗳️ My Votes ({myVotesCount})
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Poll Grid */}
       {reversedPollIds.length > 0 ? (
-        <div className="grid gap-8 md:grid-cols-2">
-          {reversedPollIds.map((pollId) => (
-            <PollCard 
-              key={Number(pollId)} 
-              pollId={Number(pollId)} 
-              onVoteSuccess={refetchPolls}
-            />
-          ))}
-        </div>
+        <>
+          {/* My Votes History Header */}
+          {filter === 'my-votes' && Object.keys(voteHistory).length > 0 && (
+            <div className="bg-gold/5 border border-gold/30 rounded-sm p-4 mb-6">
+              <h3 className="text-base font-cinzel font-bold text-black mb-3 flex items-center gap-2">
+                <span>📋</span> Vote Transaction History
+              </h3>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {Object.entries(voteHistory).map(([pollId, txHash]) => (
+                  <div key={pollId} className="flex items-center justify-between text-sm bg-white p-2 rounded border border-stone-100">
+                    <span className="text-black font-inter">Poll #{pollId}</span>
+                    <a
+                      href={`https://sepolia.etherscan.io/tx/${txHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-aegean hover:underline font-mono flex items-center gap-1"
+                    >
+                      🔗 {shortenHash(txHash)}
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="grid gap-8 md:grid-cols-2">
+            {reversedPollIds.map((pollId) => (
+              <PollCard 
+                key={Number(pollId)} 
+                pollId={Number(pollId)} 
+                onVoteSuccess={handleVoteSuccess}
+              />
+            ))}
+          </div>
+        </>
       ) : (
         <div className="text-center py-20 bg-white border border-stone-200 rounded-sm shadow-sm">
           <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-stone-50 border border-stone-100 mb-6">
@@ -149,13 +247,14 @@ export function PollList() {
             </svg>
           </div>
           <p className="text-black text-xl mb-3 font-cinzel font-bold">
-            {filter === 'all' ? 'No Polls Yet' : `No ${filter} polls`}
+            {filter === 'all' ? 'No Polls Yet' : filter === 'my-votes' ? 'No Votes Yet' : `No ${filter} polls`}
           </p>
           <p className="text-black text-base font-inter font-medium">
             {filter === 'all' && isConnected && 'Be the first to create a poll.'}
             {filter === 'all' && !isConnected && 'Connect wallet to create a poll.'}
             {filter === 'active' && 'No active polls.'}
             {filter === 'ended' && 'No ended polls yet.'}
+            {filter === 'my-votes' && 'You have not voted on any polls yet.'}
           </p>
         </div>
       )}

@@ -22,6 +22,20 @@ const EtherscanTxLink = ({ hash, label }: { hash: string; label?: string }) => (
   </a>
 );
 
+// Helper to save vote to localStorage
+const saveVoteToHistory = (address: string, pollId: number, txHash: string) => {
+  if (typeof window === 'undefined') return;
+  try {
+    const key = `veil-vote-history-${address.toLowerCase()}`;
+    const existing = localStorage.getItem(key);
+    const history = existing ? JSON.parse(existing) : {};
+    history[pollId.toString()] = txHash;
+    localStorage.setItem(key, JSON.stringify(history));
+  } catch (error) {
+    console.error('Failed to save vote history:', error);
+  }
+};
+
 interface PollCardProps {
   pollId: number;
   onVoteSuccess?: () => void;
@@ -121,9 +135,10 @@ export function PollCard({ pollId, onVoteSuccess }: PollCardProps) {
 
   // Handle vote confirmation
   useEffect(() => {
-    if (isConfirmed && txHash) {
+    if (isConfirmed && txHash && address) {
       setIsVoting(false);
       setVoteTxHash(txHash); // Save vote transaction hash
+      saveVoteToHistory(address, pollId, txHash); // Persist to localStorage
       refetchHasVoted();
       refetchPollInfo();
       setShowVoteButtons(false);
@@ -131,7 +146,7 @@ export function PollCard({ pollId, onVoteSuccess }: PollCardProps) {
       reset();
       onVoteSuccess?.();
     }
-  }, [isConfirmed, txHash, refetchHasVoted, refetchPollInfo, reset, onVoteSuccess]);
+  }, [isConfirmed, txHash, address, pollId, refetchHasVoted, refetchPollInfo, reset, onVoteSuccess]);
 
   // Reset isVoting when transaction starts (writeContract succeeded)
   useEffect(() => {
