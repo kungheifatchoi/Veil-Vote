@@ -18,7 +18,7 @@ import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
  * - Encrypted voting (FHE.fromExternal, FHE.add, FHE.select)
  * - Result decryption (FHE.allow + SDK userDecrypt)
  * 
- * Deployed Contract: 0x1a03f874a5CE8CD02B673C35D381F0DF85F740D1
+ * Deployed Contract: 0x3C10C793CAE53B9d781D569beB8E26D46584c335
  */
 describe("VeilVote", function () {
   let veilVote: VeilVote;
@@ -123,6 +123,6 @@ describe("VeilVote", function () {
    *    - SDK userDecrypt() with EIP-712 signature decrypts off-chain
    *    - Results displayed in frontend only, never stored on-chain
    * 
-   * Live Demo: https://sepolia.etherscan.io/address/0x1a03f874a5CE8CD02B673C35D381F0DF85F740D1
+   * Live Demo: https://sepolia.etherscan.io/address/0x3C10C793CAE53B9d781D569beB8E26D46584c335
    */
 });

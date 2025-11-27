@@ -245,7 +245,7 @@ interface IVeilVote {
 
 | Network | Address | Status |
 |---------|---------|--------|
-| Ethereum Sepolia | `0x1a03f874a5CE8CD02B673C35D381F0DF85F740D1` | ✅ Verified |
+| Ethereum Sepolia | `0x3C10C793CAE53B9d781D569beB8E26D46584c335` | ✅ Verified |
 
 ---
 

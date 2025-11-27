@@ -161,7 +161,7 @@ veil-vote/
 
 ## 📜 Smart Contract
 
-**VeilVote**: [`0x1a03f874a5CE8CD02B673C35D381F0DF85F740D1`](https://sepolia.etherscan.io/address/0x1a03f874a5CE8CD02B673C35D381F0DF85F740D1#code)
+**VeilVote**: [`0x3C10C793CAE53B9d781D569beB8E26D46584c335`](https://sepolia.etherscan.io/address/0x3C10C793CAE53B9d781D569beB8E26D46584c335#code)
 
 ### Core Functions
 
