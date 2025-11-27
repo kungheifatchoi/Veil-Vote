@@ -53,7 +53,7 @@ export function PollList() {
     const statusResult = pollStatuses?.[index];
     if (!statusResult || statusResult.status !== 'success') return true; // Show if status unknown
     
-    const status = statusResult.result as number;
+    const status = Number(statusResult.result);
     // status: 0 = Active, 1 = Ended
     if (filter === 'active') return status === 0;
     if (filter === 'ended') return status === 1;
@@ -65,7 +65,7 @@ export function PollList() {
   // Count active and ended polls
   const activePollsCount = (pollIds || []).filter((_, index) => {
     const statusResult = pollStatuses?.[index];
-    return statusResult?.status === 'success' && statusResult.result === 0;
+    return statusResult?.status === 'success' && Number(statusResult.result) === 0;
   }).length;
 
   const endedPollsCount = (pollIds || []).filter((_, index) => {
