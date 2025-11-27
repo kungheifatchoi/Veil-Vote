@@ -5,6 +5,23 @@ import { useAccount, useReadContract, useWriteContract, useWaitForTransactionRec
 import { VEIL_VOTE_ADDRESS, VEIL_VOTE_ABI } from '@/lib/contracts';
 import { initializeFhevm, requestBatchUserDecryption, encryptValue } from '@/lib/fhevm';
 
+// Helper to shorten hash for display
+const shortenHash = (hash: string) => `${hash.slice(0, 6)}...${hash.slice(-4)}`;
+
+// Etherscan link component
+const EtherscanTxLink = ({ hash, label }: { hash: string; label?: string }) => (
+  <a
+    href={`https://sepolia.etherscan.io/tx/${hash}`}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="inline-flex items-center gap-1 text-aegean hover:text-aegean/80 hover:underline font-mono text-sm transition-colors"
+    title={hash}
+  >
+    <span>🔗</span>
+    <span>{label || shortenHash(hash)}</span>
+  </a>
+);
+
 interface PollCardProps {
   pollId: number;
   onVoteSuccess?: () => void;
@@ -31,6 +48,8 @@ export function PollCard({ pollId, onVoteSuccess }: PollCardProps) {
   const [decryptedResults, setDecryptedResults] = useState<{ yes: number; no: number } | null>(null);
   const [voteChoice, setVoteChoice] = useState<boolean | null>(null);
   const [showVoteButtons, setShowVoteButtons] = useState(false);
+  const [voteTxHash, setVoteTxHash] = useState<string | null>(null);
+  const [decryptTxHash, setDecryptTxHash] = useState<string | null>(null);
 
   // Fetch poll info
   const { data: pollInfo, refetch: refetchPollInfo } = useReadContract({
@@ -102,8 +121,9 @@ export function PollCard({ pollId, onVoteSuccess }: PollCardProps) {
 
   // Handle vote confirmation
   useEffect(() => {
-    if (isConfirmed) {
+    if (isConfirmed && txHash) {
       setIsVoting(false);
+      setVoteTxHash(txHash); // Save vote transaction hash
       refetchHasVoted();
       refetchPollInfo();
       setShowVoteButtons(false);
@@ -111,7 +131,7 @@ export function PollCard({ pollId, onVoteSuccess }: PollCardProps) {
       reset();
       onVoteSuccess?.();
     }
-  }, [isConfirmed, refetchHasVoted, refetchPollInfo, reset, onVoteSuccess]);
+  }, [isConfirmed, txHash, refetchHasVoted, refetchPollInfo, reset, onVoteSuccess]);
 
   // Reset isVoting when transaction starts (writeContract succeeded)
   useEffect(() => {
@@ -185,6 +205,11 @@ export function PollCard({ pollId, onVoteSuccess }: PollCardProps) {
   useEffect(() => {
     if (!isAccessConfirmed || !walletClient || !encryptedResults || !address) return;
 
+    // Save decrypt access transaction hash
+    if (accessTxHash) {
+      setDecryptTxHash(accessTxHash);
+    }
+
     const performDecryption = async () => {
       try {
         await initializeFhevm();
@@ -220,7 +245,7 @@ export function PollCard({ pollId, onVoteSuccess }: PollCardProps) {
     };
 
     performDecryption();
-  }, [isAccessConfirmed, walletClient, encryptedResults, address]);
+  }, [isAccessConfirmed, accessTxHash, walletClient, encryptedResults, address]);
 
   if (!pollInfo) {
     return (
@@ -277,9 +302,17 @@ export function PollCard({ pollId, onVoteSuccess }: PollCardProps) {
 
       {/* Vote Status / Results */}
       {hasVoted && !hasEnded && (
-        <div className="mb-6 p-4 bg-olive/5 border-2 border-olive/30 text-olive text-base font-cinzel font-black uppercase tracking-wide flex items-center gap-3">
-          <span className="text-xl">✓</span>
-          Vote Submitted (Encrypted)
+        <div className="mb-6 p-4 bg-olive/5 border-2 border-olive/30">
+          <div className="text-olive text-base font-cinzel font-black uppercase tracking-wide flex items-center gap-3 mb-2">
+            <span className="text-xl">✓</span>
+            Vote Submitted (Encrypted)
+          </div>
+          {voteTxHash && (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-black/60 font-inter">Tx:</span>
+              <EtherscanTxLink hash={voteTxHash} />
+            </div>
+          )}
         </div>
       )}
 
@@ -316,6 +349,12 @@ export function PollCard({ pollId, onVoteSuccess }: PollCardProps) {
                 <span>{(decryptedResults.yes / (decryptedResults.yes + decryptedResults.no) * 100).toFixed(1)}%</span>
                 <span>{(decryptedResults.no / (decryptedResults.yes + decryptedResults.no) * 100).toFixed(1)}%</span>
               </div>
+            </div>
+          )}
+          {decryptTxHash && (
+            <div className="mt-4 pt-3 border-t border-stone-200 flex items-center gap-2 text-sm">
+              <span className="text-black/60 font-inter">Decrypt Tx:</span>
+              <EtherscanTxLink hash={decryptTxHash} />
             </div>
           )}
         </div>
