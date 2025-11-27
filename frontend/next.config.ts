@@ -5,7 +5,10 @@ const nextConfig: NextConfig = {
   // Transpile SDK packages
   transpilePackages: ['@zama-fhe/relayer-sdk'],
   
-  // Webpack configuration for browser compatibility
+  // Enable Turbopack with empty config (Next.js 16 default)
+  turbopack: {},
+  
+  // Webpack configuration for browser compatibility (fallback)
   webpack: (config, { isServer }) => {
     if (!isServer) {
       // Polyfill 'global' for browser (SDK uses Node.js global)
