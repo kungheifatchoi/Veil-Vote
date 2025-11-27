@@ -75,7 +75,7 @@ const walletConnectConnector = createConnector((config) => ({
   type: 'walletConnect' as const,
   async connect() {
     if (typeof window === 'undefined') throw new Error('No window');
-    const provider = await this.getProvider();
+    const provider = await this.getProvider() as any;
     await provider.connect();
     const accounts = (provider.accounts || []) as string[];
     const chainId = provider.chainId ?? sepolia.id;
