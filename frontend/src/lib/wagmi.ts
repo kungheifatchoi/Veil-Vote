@@ -150,7 +150,7 @@ export const config = createConfig({
   chains: [sepolia],
   connectors: [injectedConnector, walletConnectConnector],
   transports: {
-    [sepolia.id]: http('https://rpc.sepolia.org'),
+    [sepolia.id]: http('https://eth-sepolia.g.alchemy.com/v2/4v01_k6CcRCovwqh7tiSh'),
   },
   // Disable auto-reconnect on page load
   syncConnectedChain: false,
