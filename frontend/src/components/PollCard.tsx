@@ -227,7 +227,7 @@ export function PollCard({ pollId, onVoteSuccess }: PollCardProps) {
         return;
       }
       
-      console.log('🔐 Vote encrypted:', { voteYes, handle: encrypted.handle });
+      console.log('🔐 Vote encrypted:', { handle: encrypted.handle });
       
       // Send encrypted vote to contract
       writeContract({

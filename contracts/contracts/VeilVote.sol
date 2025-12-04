@@ -315,4 +315,3 @@ contract VeilVote is ZamaEthereumConfig {
         return 0; // Active
     }
 }
-

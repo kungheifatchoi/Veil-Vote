@@ -30,9 +30,6 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-alabaster text-slate selection:bg-aegean/10">
-      {/* Subtle Grain/Paper Texture Overlay - optional, keeping it clean for now */}
-
-      {/* Content */}
       <div className="relative z-10">
         {/* Header */}
         <header className="border-b border-stone-200 bg-alabaster/90 backdrop-blur-md sticky top-0 z-50">
